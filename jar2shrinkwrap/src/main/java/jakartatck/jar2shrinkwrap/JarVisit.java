@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -36,7 +37,9 @@ import java.util.zip.ZipInputStream;
  */
 public class JarVisit {
 
-    private final String archiveFile, targetFolder;
+    private final String targetFolder;
+    private final String archiveFile;
+
     public JarVisit(String archiveFile, String targetFolder) {
         this.archiveFile = archiveFile;
         this.targetFolder = targetFolder;
@@ -47,6 +50,11 @@ public class JarVisit {
         if(!fileTargetFolder.exists()) {
             fileTargetFolder.mkdirs();
         }
+        JarProcessor jarProcessor;
+        if (archiveFile.endsWith(".war"))
+            jarProcessor = new WarFileProcessor(archiveFile, fileTargetFolder);
+        else
+            throw new IllegalStateException("unsupported file type extension: " + archiveFile);
 
         System.out.println("output will be in " + fileTargetFolder.getName());
         final byte[] buffer = new byte[100*1024];
@@ -54,12 +62,12 @@ public class JarVisit {
             ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(archiveFile));
             ZipEntry entry = zipInputStream.getNextEntry();
             while(entry != null) {
-                process(entry);
+                jarProcessor.process(entry);
                 entry = zipInputStream.getNextEntry();
             }
             zipInputStream.closeEntry();
             zipInputStream.close();
-
+            jarProcessor.saveOutput();
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
@@ -68,18 +76,4 @@ public class JarVisit {
 
     }
 
-    private void process(ZipEntry entry) {
-        
-        if (entry.isDirectory()) {
-            // System.out.println("Entered directory" + entry.toString());
-        } else if (entry.toString().startsWith("META-INF/")) {
-            System.out.println("save META-INF " + entry.getName());
-        } else if (entry.toString().startsWith("WEB-INF/classes/")) {
-            System.out.println("save class " + entry.getName());
-        } else if (entry.toString().startsWith("WEB-INF/lib/")) {
-            System.out.println("save library " + entry.getName());
-        } else if (entry.toString().startsWith("WEB-INF/")) {
-            System.out.println("save WEB-INF " + entry.getName());
-        }
-    }
 }
