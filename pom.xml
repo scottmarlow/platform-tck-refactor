@@ -110,6 +110,7 @@
         <module>jsp</module>
         <module>libutil</module>
         <module>servlet</module>
+        <module>jar2shrinkwrap</module>
     </modules>
 
     <dependencyManagement>
